@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# Thin wrapper around DiscordChatExporter.Cli: sources the token file so the
+# raw token never appears in shell history, argv, or process listings.
+#
+# Env:
+#   DCE_HOME   install dir of DiscordChatExporter.Cli (default: $HOME/discord-chat-exporter)
+#   ENV_FILE   token file                             (default: $HOME/.config/dce/env)
+#   DCE_BOT    1 to pass --bot (token is a bot token)
+set -euo pipefail
+
+ENV_FILE="${ENV_FILE:-$HOME/.config/dce/env}"
+LEGACY_ENV_FILE="$HOME/.discord_token"
+BIN="${DCE_HOME:-$HOME/discord-chat-exporter}/DiscordChatExporter.Cli"
+
+if [[ ! -x "$BIN" ]]; then
+  echo "DiscordChatExporter CLI not found or not executable: $BIN" >&2
+  echo "Run install.sh, or set DCE_HOME to your install directory." >&2
+  exit 1
+fi
+
+if [[ -f "$ENV_FILE" ]]; then
+  set -a
+  source "$ENV_FILE"
+  set +a
+elif [[ -f "$LEGACY_ENV_FILE" ]]; then
+  set -a
+  source "$LEGACY_ENV_FILE"
+  set +a
+fi
+
+if [[ -z "${DISCORD_TOKEN:-}" || "$DISCORD_TOKEN" == "PASTE_RAW_USER_TOKEN_HERE" ]]; then
+  echo "Set DISCORD_TOKEN in $ENV_FILE before running DiscordChatExporter." >&2
+  exit 1
+fi
+
+if [[ "${DCE_BOT:-0}" == "1" ]]; then
+  exec "$BIN" "$@" --bot
+fi
+exec "$BIN" "$@"

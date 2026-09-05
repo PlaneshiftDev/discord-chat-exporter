@@ -1,0 +1,18 @@
+# Never commit credentials
+config/env
+.env
+*.token
+
+# Never commit the upstream binary or exported chat data.
+# Leading slash matters: an unanchored "discord-chat-exporter/" would also ignore
+# skills/discord-chat-exporter/.
+/discord-chat-exporter/
+DiscordChatExporter.Cli*
+*.zip
+/exports/
+/discord-exports/
+*.json
+
+# Editor/OS noise
+.DS_Store
+*.swp
