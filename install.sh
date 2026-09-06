@@ -34,9 +34,15 @@ detect_platform() {
 
 PLATFORM="${DCE_PLATFORM:-$(detect_platform)}"
 
-for c in curl unzip; do
-  command -v "$c" >/dev/null || { echo "missing dependency: $c" >&2; exit 1; }
-done
+command -v curl >/dev/null || { echo "missing dependency: curl" >&2; exit 1; }
+# unzip is missing on minimal images (Debian cloud / LXC templates); python3 rarely is.
+if command -v unzip >/dev/null; then
+  extract() { unzip -q -o "$1" -d "$2"; }
+elif command -v python3 >/dev/null; then
+  extract() { python3 -c 'import sys, zipfile; zipfile.ZipFile(sys.argv[1]).extractall(sys.argv[2])' "$1" "$2"; }
+else
+  echo "missing dependency: unzip (or python3 as a fallback)" >&2; exit 1
+fi
 
 if [[ -n "${DCE_VERSION:-}" ]]; then
   URL="https://github.com/Tyrrrz/DiscordChatExporter/releases/download/${DCE_VERSION}/DiscordChatExporter.Cli.${PLATFORM}.zip"
@@ -50,7 +56,7 @@ TMP="$(mktemp -d)"; trap 'rm -rf "$TMP"' EXIT
 # logs buffer \r redraws into one enormous line.
 curl -sSL --fail -o "$TMP/dce.zip" "$URL"
 mkdir -p "$DCE_HOME"
-unzip -q -o "$TMP/dce.zip" -d "$DCE_HOME"
+extract "$TMP/dce.zip" "$DCE_HOME"
 chmod +x "$DCE_HOME/DiscordChatExporter.Cli"
 
 echo "==> Installing wrapper to ${BIN_DIR}/dce"
